@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindMirror — คุณมองโลกยังไง?</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --card: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #c8a96e;
+    --accent2: #7eb8c8;
+    --text: #e8e0d4;
+    --muted: #6b6460;
+    --white: #f5f0ea;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans Thai', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; min-height: 100vh; padding: 60px 0; }
+  .screen.active { display: flex; flex-direction: column; justify-content: center; }
+
+  /* INTRO SCREEN */
+  #intro {
+    text-align: center;
+    position: relative;
+  }
+
+  .logo-mark {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 32px;
+    position: relative;
+  }
+
+  .logo-mark::before, .logo-mark::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+  }
+
+  .logo-mark::before {
+    width: 56px; height: 56px;
+    border: 1px solid var(--accent);
+    top: 0; left: 0;
+    animation: spin-slow 12s linear infinite;
+  }
+
+  .logo-mark::after {
+    width: 32px; height: 32px;
+    border: 1px solid var(--accent2);
+    top: 12px; left: 12px;
+    animation: spin-slow 8s linear infinite reverse;
+  }
+
+  @keyframes spin-slow {
+    to { transform: rotate(360deg); }
+  }
+
+  .title-main {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .title-sub {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 40px;
+  }
+
+  .intro-desc {
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.9;
+    max-width: 480px;
+    margin: 0 auto 48px;
+  }
+
+  .intro-desc em {
+    color: var(--text);
+    font-style: normal;
+  }
+
+  .btn-start {
+    display: inline-block;
+    padding: 16px 48px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Noto Sans Thai', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-start::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: -1;
+  }
+
+  .btn-start:hover {
+    color: var(--bg);
+  }
+
+  .btn-start:hover::before {
+    transform: translateX(0);
+  }
+
+  /* QUIZ SCREEN */
+  #quiz { padding: 40px 0; justify-content: flex-start; }
+
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--accent);
+    transition: width 0.5s ease;
+    z-index: 100;
+  }
+
+  .question-header {
+    margin-bottom: 48px;
+    padding-top: 20px;
+  }
+
+  .q-number {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .q-number::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .q-scenario {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .q-text-others {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.1rem, 3vw, 1.35rem);
+    color: var(--white);
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  .q-text-self {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 6px;
+  }
+
+  /* OPTIONS */
+  .options-group { margin-bottom: 32px; }
+
+  .options-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .options-grid {
+    display: grid;
+    gap: 8px;
+  }
+
+  .option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Noto Sans Thai', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    line-height: 1.5;
+  }
+
+  .option-btn:hover {
+    border-color: var(--accent);
+    background: #1f1d1a;
+  }
+
+  .option-btn.selected {
+    border-color: var(--accent);
+    background: rgba(200, 169, 110, 0.08);
+    color: var(--white);
+  }
+
+  .option-btn.selected-self {
+    border-color: var(--accent2);
+    background: rgba(126, 184, 200, 0.08);
+    color: var(--white);
+  }
+
+  .opt-index {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+    min-width: 18px;
+    margin-top: 1px;
+  }
+
+  .option-btn.selected .opt-index { color: var(--accent); }
+  .option-btn.selected-self .opt-index { color: var(--accent2); }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .btn-nav {
+    padding: 12px 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Noto Sans Thai', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-nav:hover:not(:disabled) {
+    border-color: var(--text);
+    color: var(--text);
+  }
+
+  .btn-nav:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  .btn-next {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-next:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--bg) !important;
+  }
+
+  /* RESULT SCREEN */
+  #result { text-align: center; padding: 80px 0; }
+
+  .result-tag {
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--accent2);
+    margin-bottom: 20px;
+  }
+
+  .archetype-name {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 7vw, 3.5rem);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .archetype-tagline {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--accent);
+    margin-bottom: 48px;
+  }
+
+  .result-divider {
+    width: 40px;
+    height: 1px;
+    background: var(--border);
+    margin: 0 auto 40px;
+  }
+
+  .result-desc {
+    font-size: 0.92rem;
+    line-height: 2;
+    color: var(--muted);
+    max-width: 520px;
+    margin: 0 auto 48px;
+    text-align: left;
+  }
+
+  .result-desc strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .traits-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 480px;
+    margin: 0 auto 48px;
+    text-align: left;
+  }
+
+  .trait-card {
+    padding: 16px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .trait-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .trait-value {
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+
+  .score-bars {
+    max-width: 480px;
+    margin: 0 auto 48px;
+    text-align: left;
+  }
+
+  .score-bar-item {
+    margin-bottom: 16px;
+  }
+
+  .score-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .score-bar-track {
+    height: 2px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 1.2s ease;
+  }
+
+  .btn-retry {
+    display: inline-block;
+    padding: 14px 40px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Noto Sans Thai', sans-serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-retry:hover {
+    border-color: var(--text);
+    color: var(--text);
+  }
+
+  /* Fade animation */
+  .fade-in {
+    animation: fadeIn 0.4s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .separator {
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, transparent, var(--border), transparent);
+    margin: 0 auto 40px;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" style="width:0%"></div>
+
+<!-- INTRO -->
+<div class="screen active" id="intro">
+  <div class="container">
+    <div class="logo-mark"></div>
+    <h1 class="title-main">MindMirror</h1>
+    <p class="title-sub">How You See the World</p>
+    <p class="intro-desc">
+      แบบทดสอบนี้ไม่ได้ถามว่า <em>คุณเป็นคนแบบไหน</em><br>
+      แต่ถามว่า <em>คุณมองคนอื่นยังไง</em> — และตัวเองต่างจากนั้นแค่ไหน<br><br>
+      30 สถานการณ์ · ไม่มีคำตอบถูกหรือผิด
+    </p>
+    <button class="btn-start" onclick="startQuiz()">เริ่มทดสอบ</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="quiz">
+  <div class="container">
+    <div class="question-header fade-in" id="qHeader">
+      <div class="q-number" id="qNumber">01 / 30</div>
+      <div class="q-scenario" id="qScenario"></div>
+      <div class="q-text-others" id="qTextOthers"></div>
+    </div>
+
+    <div class="options-group fade-in">
+      <span class="options-label">คนส่วนใหญ่มักจะ —</span>
+      <div class="options-grid" id="optionsOthers"></div>
+    </div>
+
+    <div class="options-group fade-in" id="selfGroup" style="opacity:0.3; pointer-events:none;">
+      <span class="options-label" style="color: var(--accent2)">แล้วคุณล่ะ —</span>
+      <div class="options-grid" id="optionsSelf"></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-nav" id="btnPrev" onclick="prevQ()" disabled>← ก่อนหน้า</button>
+      <button class="btn-nav btn-next" id="btnNext" onclick="nextQ()" disabled>ถัดไป →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="result">
+  <div class="container">
+    <div class="result-tag">YOUR ARCHETYPE</div>
+    <div class="archetype-name" id="archetypeName"></div>
+    <div class="archetype-tagline" id="archetypeTagline"></div>
+    <div class="result-divider"></div>
+    <div class="result-desc" id="resultDesc"></div>
+    <div class="traits-grid" id="traitsGrid"></div>
+    <div class="score-bars" id="scoreBars"></div>
+    <div class="separator"></div>
+    <button class="btn-retry" onclick="restartQuiz()">ทำอีกครั้ง</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    scenario: "การตัดสินใจ",
+    others: "เมื่อต้องตัดสินใจเรื่องสำคัญ คนส่วนใหญ่มักจะ...",
+    options: ["ถามความเห็นคนรอบข้างก่อน", "ตัดสินใจเองตามความรู้สึก", "หาข้อมูลให้มากที่สุดก่อน", "ผัดไปเรื่อยๆ จนถูกบังคับ"]
+  },
+  {
+    scenario: "ความขัดแย้ง",
+    others: "เมื่อมีความขัดแย้งกับคนใกล้ชิด คนส่วนใหญ่มักจะ...",
+    options: ["หลีกเลี่ยงและรอให้เรื่องซาไปเอง", "พูดตรงๆ ทันที", "บ่นกับคนอื่นแทน", "แกล้งทำเป็นว่าไม่เป็นไร"]
+  },
+  {
+    scenario: "ความล้มเหลว",
+    others: "เมื่อทำอะไรผิดพลาด คนส่วนใหญ่มักจะ...",
+    options: ["โทษตัวเองหนักมาก", "หาเหตุผลอธิบายว่าทำไมถึงพลาด", "ลืมแล้วก้าวต่อไปเร็ว", "โทษปัจจัยภายนอก"]
+  },
+  {
+    scenario: "โซเชียลมีเดีย",
+    others: "เมื่อเห็นคนอื่นโพสต์ชีวิตดูดี คนส่วนใหญ่มักรู้สึก...",
+    options: ["อยากมีชีวิตแบบนั้นบ้าง", "สงสัยว่าของจริงเป็นยังไง", "ไม่รู้สึกอะไรเป็นพิเศษ", "รู้สึกด้อยค่าตัวเองลง"]
+  },
+  {
+    scenario: "การให้ความช่วยเหลือ",
+    others: "เมื่อมีคนขอความช่วยเหลือ คนส่วนใหญ่มักจะ...",
+    options: ["ช่วยทันทีโดยไม่ถามมาก", "ช่วยแต่รู้สึกหนักใจ", "ประเมินก่อนว่าช่วยได้ไหม", "หาทางเลี่ยงถ้าทำได้"]
+  },
+  {
+    scenario: "ข่าวสาร",
+    others: "เมื่อเห็นข่าวที่น่าตกใจ คนส่วนใหญ่มักจะ...",
+    options: ["แชร์ต่อทันที", "อ่านรายละเอียดก่อนแล้วค่อยตัดสิน", "เลือกเชื่อในสิ่งที่ตัวเองอยากเชื่อ", "ไม่สนใจเพราะข่าวมันมีเยอะ"]
+  },
+  {
+    scenario: "ความสำเร็จของคนอื่น",
+    others: "เมื่อเพื่อนประสบความสำเร็จใหญ่ คนส่วนใหญ่มักจะ...",
+    options: ["ยินดีด้วยจริงๆ", "ยินดีแต่ข้างในรู้สึกอิจฉา", "เอาตัวเองไปเปรียบ", "รู้สึกกดดันต้องทำให้ได้เหมือนกัน"]
+  },
+  {
+    scenario: "การวิจารณ์",
+    others: "เมื่อถูกวิจารณ์ คนส่วนใหญ่มักจะ...",
+    options: ["ป้องกันตัวทันที", "รับฟังแต่เจ็บปวดข้างใน", "วิเคราะห์ว่ามีส่วนจริงไหม", "เก็บไปคิดนานเกินจำเป็น"]
+  },
+  {
+    scenario: "ความสัมพันธ์",
+    others: "ในความสัมพันธ์ คนส่วนใหญ่มักจะ...",
+    options: ["ให้มากกว่าที่ได้รับ", "คาดหวังมากกว่าที่แสดงออก", "รักษาสมดุลได้ดี", "กลัวการเปิดเผยตัวเองจริงๆ"]
+  },
+  {
+    scenario: "ความเบื่อ",
+    others: "เมื่อรู้สึกเบื่อ คนส่วนใหญ่มักจะ...",
+    options: ["หยิบโทรศัพท์ขึ้นมาทันที", "หาอะไรทำใหม่ๆ", "นอน", "กินของ"]
+  },
+  {
+    scenario: "ความคิดเห็น",
+    others: "เมื่อความเห็นตัวเองแตกต่างจากคนส่วนใหญ่ คนส่วนใหญ่มักจะ...",
+    options: ["เงียบและไม่พูด", "พูดออกไปแม้รู้ว่าคนไม่เห็นด้วย", "ปรับความเห็นตัวเองให้ใกล้เคียงคนอื่น", "มองหาคนที่เห็นด้วยก่อน"]
+  },
+  {
+    scenario: "การชมเชย",
+    others: "เมื่อได้รับคำชม คนส่วนใหญ่มักจะ...",
+    options: ["ปฏิเสธหรือลดตัวเอง", "รับและรู้สึกดี", "สงสัยว่าชมจริงหรือแค่สุภาพ", "อยากได้ยินซ้ำอีก"]
+  },
+  {
+    scenario: "ปัญหา",
+    others: "เมื่อเจอปัญหาใหญ่ คนส่วนใหญ่มักจะ...",
+    options: ["แก้ปัญหาทันที", "ระบาย emotion ก่อนค่อยคิด", "ขอคนอื่นช่วยคิด", "หลีกเลี่ยงและรอให้มันคลี่คลายเอง"]
+  },
+  {
+    scenario: "ความเป็นส่วนตัว",
+    others: "เมื่อถูกถามเรื่องส่วนตัว คนส่วนใหญ่มักจะ...",
+    options: ["บอกมากกว่าที่ควร", "บอกเท่าที่จำเป็น", "หัวข้อเพื่อเลี่ยง", "โกหกเล็กน้อยเพื่อความสบายใจ"]
+  },
+  {
+    scenario: "กฎเกณฑ์",
+    others: "เมื่อเจอกฎที่รู้สึกว่าไม่ยุติธรรม คนส่วนใหญ่มักจะ...",
+    options: ["ทำตามโดยไม่บ่น", "บ่นแต่ก็ทำตาม", "หาทางเลี่ยงกฎ", "พยายามเปลี่ยนกฎ"]
+  },
+  {
+    scenario: "อนาคต",
+    others: "เมื่อคิดถึงอนาคต คนส่วนใหญ่มักจะ...",
+    options: ["กังวลเรื่องที่ยังไม่เกิด", "วางแผนล่วงหน้าอย่างละเอียด", "ใช้ชีวิตไปวันๆ", "มองโลกในแง่ดีไว้ก่อน"]
+  },
+  {
+    scenario: "ความไว้วางใจ",
+    others: "คนส่วนใหญ่มักจะ...",
+    options: ["ไว้ใจคนง่าย", "ไว้ใจยากจนกว่าจะพิสูจน์ได้", "ไว้ใจเฉพาะคนที่รู้จักนาน", "ไว้ใจคนที่เหมือนตัวเอง"]
+  },
+  {
+    scenario: "การเปลี่ยนแปลง",
+    others: "เมื่อต้องเผชิญกับการเปลี่ยนแปลงใหญ่ คนส่วนใหญ่มักจะ...",
+    options: ["ต้านและยึดติดกับสิ่งเดิม", "ปรับตัวได้แต่ต้องใช้เวลา", "ตื่นเต้นกับสิ่งใหม่", "รอดูว่าคนอื่นทำยังไงก่อน"]
+  },
+  {
+    scenario: "ความสุข",
+    others: "คนส่วนใหญ่มักหาความสุขจาก...",
+    options: ["การอยู่กับคนอื่น", "การอยู่คนเดียว", "การทำสิ่งที่มีเป้าหมาย", "การหลีกหนีจากสิ่งที่กดดัน"]
+  },
+  {
+    scenario: "ความผิดหวัง",
+    others: "เมื่อผิดหวังกับคนอื่น คนส่วนใหญ่มักจะ...",
+    options: ["โกรธและแสดงออก", "เก็บไว้ในใจ", "พยายามเข้าใจเหตุผลของอีกฝ่าย", "ลดความคาดหวังลง"]
+  },
+  {
+    scenario: "การเรียนรู้",
+    others: "เมื่อต้องเรียนรู้สิ่งใหม่ คนส่วนใหญ่มักจะ...",
+    options: ["ลองทำดูเลย", "อ่านทฤษฎีก่อน", "ดูคนอื่นทำก่อนแล้วค่อยลอง", "รอให้มีคนสอน"]
+  },
+  {
+    scenario: "ความกลัว",
+    others: "สิ่งที่คนส่วนใหญ่กลัวมากที่สุดคือ...",
+    options: ["การถูกปฏิเสธหรือไม่เป็นที่ยอมรับ", "การล้มเหลว", "การสูญเสียคนที่รัก", "ความไม่แน่นอนในชีวิต"]
+  },
+  {
+    scenario: "เงิน",
+    others: "เมื่อมีเงินเพิ่มขึ้น คนส่วนใหญ่มักจะ...",
+    options: ["ใช้จ่ายมากขึ้นตาม", "เก็บออมไว้", "ลงทุนทำให้งอกเงย", "แบ่งให้คนอื่นหรือบริจาค"]
+  },
+  {
+    scenario: "ความคิดสร้างสรรค์",
+    others: "เมื่อต้องแก้ปัญหาด้วยความคิดสร้างสรรค์ คนส่วนใหญ่มักจะ...",
+    options: ["ทำตามแบบเดิมที่เคยได้ผล", "หาวิธีใหม่ที่ไม่เคยลอง", "ดูว่าคนอื่นทำอะไร", "รอแรงบันดาลใจมาเอง"]
+  },
+  {
+    scenario: "การขอโทษ",
+    others: "เมื่อทำผิด คนส่วนใหญ่มักจะ...",
+    options: ["ขอโทษทันทีโดยไม่ลังเล", "ขอโทษแต่รู้สึกตัวเองถูกด้วยบางส่วน", "รอให้อีกฝ่ายเปิดประเด็นก่อน", "หาทางอธิบายมากกว่าขอโทษ"]
+  },
+  {
+    scenario: "ความสนใจ",
+    others: "เมื่อสนใจอะไรบางอย่าง คนส่วนใหญ่มักจะ...",
+    options: ["ศึกษาลึกจนรู้ทุกอย่าง", "รู้เท่าที่จำเป็น", "หมกมุ่นชั่วคราวแล้วเลิกสนใจ", "แชร์ให้คนอื่นรู้ทันที"]
+  },
+  {
+    scenario: "ความสัมพันธ์ออนไลน์",
+    others: "เมื่อถูก unfriend หรือ unfollow คนส่วนใหญ่มักจะ...",
+    options: ["ไม่สนใจ", "สงสัยว่าทำอะไรผิด", "โกรธหรือเจ็บปวด", "ทำแบบเดิมกับอีกฝ่ายบ้าง"]
+  },
+  {
+    scenario: "คำแนะนำ",
+    others: "เมื่อให้คำแนะนำคนอื่น คนส่วนใหญ่มักจะ...",
+    options: ["บอกสิ่งที่อยากได้ยินมากกว่าความจริง", "พูดตรงๆ แม้อาจทำให้เจ็บปวด", "ถามก่อนว่าอยากได้ยินอะไร", "หลีกเลี่ยงการให้คำแนะนำ"]
+  },
+  {
+    scenario: "ความโดดเดี่ยว",
+    others: "เมื่อรู้สึกโดดเดี่ยว คนส่วนใหญ่มักจะ...",
+    options: ["ติดต่อคนอื่นทันที", "ปล่อยให้ตัวเองนั่งอยู่กับความรู้สึกนั้น", "จมกับสิ่งบันเทิงเพื่อไม่ให้คิดมาก", "แกล้งทำเป็นว่าไม่รู้สึกอะไร"]
+  },
+  {
+    scenario: "อัตลักษณ์",
+    others: "คนส่วนใหญ่นิยามตัวเองผ่าน...",
+    options: ["สิ่งที่ทำ / อาชีพ", "ความสัมพันธ์กับคนอื่น", "ความเชื่อและค่านิยม", "สิ่งที่ชอบหรือสนใจ"]
+  }
+];
+
+// Archetype definitions based on scoring dimensions
+// Dimensions: Social(S), Rational(R), Self-aware(A), Independent(I)
+// Each answer maps to dimension scores
+
+const archetypes = [
+  {
+    name: "The Mirror",
+    tagline: "คุณเห็นตัวเองในทุกคน",
+    desc: "คุณมีแนวโน้มมองคนอื่นผ่านเลนส์ของตัวเอง — สิ่งที่คุณคิดว่า \"คนส่วนใหญ่\" ทำ มักสะท้อนสิ่งที่คุณเองทำหรืออยากทำ ข้อดีคือคุณ<strong>เข้าใจความรู้สึกมนุษย์ได้ดี</strong> เพราะเชื่อมตัวเองกับคนอื่นได้ง่าย แต่บางครั้งก็ทำให้ตัดสินคนอื่นจากมุมมองของตัวเองมากเกินไป",
+    traits: [{ l: "มองโลก", v: "ผ่านตัวเอง" }, { l: "จุดแข็ง", v: "เข้าใจ emotion" }, { l: "ระวัง", v: "Projection" }, { l: "หายากแค่ไหน", v: "พบบ่อยที่สุด" }],
+    key: "mirror"
+  },
+  {
+    name: "The Analyst",
+    tagline: "คุณแยกตัวเองออกจากข้อมูล",
+    desc: "คุณมองคนอื่นอย่างเป็นระบบ แยก emotion ออกจากการวิเคราะห์ได้ดี และมักเห็นว่าตัวเองตัดสินใจได้<strong>rational กว่าคนส่วนใหญ่</strong> ซึ่งอาจจริงในหลายกรณี แต่ก็อาจทำให้พลาด context ทางอารมณ์ที่สำคัญ",
+    traits: [{ l: "มองโลก", v: "เป็นระบบ" }, { l: "จุดแข็ง", v: "วิเคราะห์แม่น" }, { l: "ระวัง", v: "Cold bias" }, { l: "หายากแค่ไหน", v: "พบบ้าง" }],
+    key: "analyst"
+  },
+  {
+    name: "The Outlier",
+    tagline: "คุณรู้ว่าตัวเองไม่เหมือนคนอื่น",
+    desc: "คุณมองคนส่วนใหญ่ว่าทำสิ่งที่ predictable และรู้สึกว่าตัวเองเลือกเส้นทางที่<strong>ต่างออกไปอย่างมีสติ</strong> ซึ่งบางครั้งก็เป็นจริง แต่ก็มีความเสี่ยงที่ identity ของคุณผูกอยู่กับการเป็น \"คนที่ต่าง\" มากเกินไป",
+    traits: [{ l: "มองโลก", v: "ต่างมุม" }, { l: "จุดแข็ง", v: "คิดนอกกรอบ" }, { l: "ระวัง", v: "Contrarian trap" }, { l: "หายากแค่ไหน", v: "ค่อนข้างหายาก" }],
+    key: "outlier"
+  },
+  {
+    name: "The Witness",
+    tagline: "คุณสังเกตโดยไม่ตัดสิน",
+    desc: "คุณมีความสามารถพิเศษในการ<strong>มองเห็นพฤติกรรมของคนอื่นได้อย่างเป็นกลาง</strong> โดยไม่ฉายภาพของตัวเองออกไปมากนัก และรู้ตัวดีว่าตัวเองก็เป็นส่วนหนึ่งของระบบนั้น ไม่ได้อยู่เหนือมัน",
+    traits: [{ l: "มองโลก", v: "เป็นกลาง" }, { l: "จุดแข็ง", v: "Self-awareness สูง" }, { l: "ระวัง", v: "Detachment" }, { l: "หายากแค่ไหน", v: "หายากมาก" }],
+    key: "witness"
+  },
+  {
+    name: "The Empath",
+    tagline: "คุณรู้สึกแทนคนอื่นได้เสมอ",
+    desc: "คุณมองคนอื่นด้วยความเข้าใจและเมตตา มักมองหา<strong>เหตุผลเบื้องหลังพฤติกรรม</strong>มากกว่าตัดสินที่ผิวเผิน แต่บางครั้งก็แบกความรู้สึกของคนอื่นมากจนลืมดูแลตัวเอง",
+    traits: [{ l: "มองโลก", v: "ผ่านความรู้สึก" }, { l: "จุดแข็ง", v: "เข้าใจผู้คน" }, { l: "ระวัง", v: "Emotional overload" }, { l: "หายากแค่ไหน", v: "พบได้" }],
+    key: "empath"
+  },
+  {
+    name: "The Realist",
+    tagline: "คุณเห็นโลกตามที่มันเป็น",
+    desc: "คุณไม่ได้มองโลกสวยงามหรือน่ากลัวเกินจริง แต่มองตาม<strong>หลักฐานที่มีอยู่จริง</strong> และยอมรับได้ทั้งด้านดีและด้านที่น่าผิดหวังของมนุษย์ รวมถึงของตัวเองด้วย",
+    traits: [{ l: "มองโลก", v: "ตามความเป็นจริง" }, { l: "จุดแข็ง", v: "ไม่หลอกตัวเอง" }, { l: "ระวัง", v: "Cynicism" }, { l: "หายากแค่ไหน", v: "หายากพอสมควร" }],
+    key: "realist"
+  },
+  {
+    name: "The Strategist",
+    tagline: "คุณอ่านคนเพื่อเข้าใจระบบ",
+    desc: "คุณมองพฤติกรรมของคนอื่นเป็นข้อมูลที่ใช้<strong>คาดเดาและวางแผน</strong> ได้ รู้ว่าคนส่วนใหญ่ทำอะไรและใช้ความรู้นั้นอย่างมีสติ แต่ก็ต้องระวังไม่ให้มองคนอื่นเป็นแค่ตัวแปรในสมการ",
+    traits: [{ l: "มองโลก", v: "เป็น pattern" }, { l: "จุดแข็ง", v: "อ่านคนแม่น" }, { l: "ระวัง", v: "Dehumanizing" }, { l: "หายากแค่ไหน", v: "หายากพอสมควร" }],
+    key: "strategist"
+  },
+  {
+    name: "The Seeker",
+    tagline: "คุณยังหาคำตอบเกี่ยวกับตัวเองอยู่",
+    desc: "คุณยังอยู่ในกระบวนการ<strong>ทำความเข้าใจตัวเองและโลก</strong> มองคนอื่นด้วยความอยากรู้อยากเห็น และยังไม่ได้ lock ตัวเองลงในกรอบใดกรอบหนึ่ง ซึ่งเป็นทั้งจุดแข็งและจุดที่ต้องพัฒนา",
+    traits: [{ l: "มองโลก", v: "ด้วยความสงสัย" }, { l: "จุดแข็ง", v: "เปิดรับมุมมองใหม่" }, { l: "ระวัง", v: "ไม่มีจุดยืนชัด" }, { l: "หายากแค่ไหน", v: "พบบ้าง" }],
+    key: "seeker"
+  }
+];
+
+let current = 0;
+let answers = []; // [{others: idx, self: idx}]
+let tempOthers = null;
+let tempSelf = null;
+
+function startQuiz() {
+  document.getElementById('intro').classList.remove('active');
+  document.getElementById('quiz').classList.add('active');
+  answers = new Array(questions.length).fill(null).map(() => ({ others: null, self: null }));
+  loadQuestion(0);
+}
+
+function loadQuestion(idx) {
+  current = idx;
+  const q = questions[idx];
+  const total = questions.length;
+
+  document.getElementById('progressBar').style.width = `${(idx / total) * 100}%`;
+  document.getElementById('qNumber').textContent = `${String(idx+1).padStart(2,'0')} / ${total}`;
+  document.getElementById('qScenario').textContent = q.scenario;
+  document.getElementById('qTextOthers').textContent = q.others;
+
+  tempOthers = answers[idx].others;
+  tempSelf = answers[idx].self;
+
+  renderOptions();
+  updateSelfGroup();
+  updateNav();
+
+  document.getElementById('qHeader').classList.remove('fade-in');
+  void document.getElementById('qHeader').offsetWidth;
+  document.getElementById('qHeader').classList.add('fade-in');
+}
+
+function renderOptions() {
+  const q = questions[current];
+
+  // Others
+  const othersEl = document.getElementById('optionsOthers');
+  othersEl.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn' + (tempOthers === i ? ' selected' : '');
+    btn.innerHTML = `<span class="opt-index">${i+1}</span><span>${opt}</span>`;
+    btn.onclick = () => selectOthers(i);
+    othersEl.appendChild(btn);
+  });
+
+  // Self
+  const selfEl = document.getElementById('optionsSelf');
+  selfEl.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn' + (tempSelf === i ? ' selected-self' : '');
+    btn.innerHTML = `<span class="opt-index">${i+1}</span><span>${opt}</span>`;
+    btn.onclick = () => selectSelf(i);
+    selfEl.appendChild(btn);
+  });
+}
+
+function selectOthers(i) {
+  tempOthers = i;
+  answers[current].others = i;
+  document.querySelectorAll('#optionsOthers .option-btn').forEach((b, idx) => {
+    b.className = 'option-btn' + (idx === i ? ' selected' : '');
+  });
+  updateSelfGroup();
+  updateNav();
+}
+
+function selectSelf(i) {
+  tempSelf = i;
+  answers[current].self = i;
+  document.querySelectorAll('#optionsSelf .option-btn').forEach((b, idx) => {
+    b.className = 'option-btn' + (idx === i ? ' selected-self' : '');
+  });
+  updateNav();
+}
+
+function updateSelfGroup() {
+  const g = document.getElementById('selfGroup');
+  if (tempOthers !== null) {
+    g.style.opacity = '1';
+    g.style.pointerEvents = 'auto';
+  } else {
+    g.style.opacity = '0.3';
+    g.style.pointerEvents = 'none';
+  }
+}
+
+function updateNav() {
+  document.getElementById('btnPrev').disabled = current === 0;
+  const bothSelected = answers[current].others !== null && answers[current].self !== null;
+  const isLast = current === questions.length - 1;
+  const btn = document.getElementById('btnNext');
+  btn.disabled = !bothSelected;
+  btn.textContent = isLast ? 'ดูผลลัพธ์ →' : 'ถัดไป →';
+}
+
+function nextQ() {
+  if (current < questions.length - 1) {
+    loadQuestion(current + 1);
+  } else {
+    showResult();
+  }
+}
+
+function prevQ() {
+  if (current > 0) loadQuestion(current - 1);
+}
+
+function computeArchetype() {
+  // Score dimensions
+  let scores = { mirror: 0, analyst: 0, outlier: 0, witness: 0, empath: 0, realist: 0, strategist: 0, seeker: 0 };
+
+  answers.forEach((a, qi) => {
+    if (a.others === null) return;
+    const same = a.others === a.self;
+    const diff = a.others !== a.self && a.self !== null;
+
+    // Pattern: both same → mirror tendency
+    if (same) scores.mirror += 1.2;
+
+    // Pattern: diff → outlier or witness
+    if (diff) {
+      scores.outlier += 0.8;
+      scores.witness += 0.5;
+    }
+
+    // Option-based scoring
+    const o = a.others;
+    const s = a.self;
+
+    // Questions about rational behavior (q2 conflict, q12 criticism, q24 advice)
+    if ([1, 7, 24].includes(qi)) {
+      if (o === 0 && s === 2) scores.analyst += 1.5; // others avoid, self analyze
+      if (o === 2) scores.realist += 0.8;
+    }
+
+    // Empathy questions
+    if ([4, 8, 19].includes(qi)) {
+      if (o === 0 || s === 0) scores.empath += 1;
+      if (o === 2 || s === 2) scores.empath += 0.8;
+    }
+
+    // Strategic/pattern reading
+    if ([5, 10, 16].includes(qi)) {
+      if (s === 1 || s === 2) scores.strategist += 1;
+      if (o === 2) scores.analyst += 0.5;
+    }
+
+    // Self-awareness
+    if (a.self !== null) {
+      if (s === 1) scores.witness += 0.8; // picking "pause and think" for self
+      if (o !== s) scores.witness += 0.3;
+    }
+
+    // Seeker pattern: varied answers, no strong pattern
+    scores.seeker += 0.1;
+  });
+
+  // Normalize
+  const keys = Object.keys(scores);
+  const max = Math.max(...keys.map(k => scores[k]));
+  keys.forEach(k => scores[k] = scores[k] / max);
+
+  const sorted = keys.sort((a, b) => scores[b] - scores[a]);
+  return { top: sorted[0], scores };
+}
+
+function showResult() {
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('quiz').classList.remove('active');
+  document.getElementById('result').classList.add('active');
+
+  const { top, scores } = computeArchetype();
+  const arch = archetypes.find(a => a.key === top) || archetypes[0];
+
+  document.getElementById('archetypeName').textContent = arch.name;
+  document.getElementById('archetypeTagline').textContent = arch.tagline;
+  document.getElementById('resultDesc').innerHTML = arch.desc;
+
+  const tg = document.getElementById('traitsGrid');
+  tg.innerHTML = '';
+  arch.traits.forEach(t => {
+    tg.innerHTML += `<div class="trait-card"><div class="trait-label">${t.l}</div><div class="trait-value">${t.v}</div></div>`;
+  });
+
+  const sb = document.getElementById('scoreBars');
+  sb.innerHTML = '<div style="font-size:0.7rem;letter-spacing:0.15em;color:var(--muted);margin-bottom:20px;">DIMENSION BREAKDOWN</div>';
+  const topKeys = Object.keys(scores).sort((a, b) => scores[b] - scores[a]).slice(0, 5);
+  const archNames = { mirror: 'Mirror', analyst: 'Analyst', outlier: 'Outlier', witness: 'Witness', empath: 'Empath', realist: 'Realist', strategist: 'Strategist', seeker: 'Seeker' };
+
+  topKeys.forEach(k => {
+    const pct = Math.round(scores[k] * 100);
+    sb.innerHTML += `
+      <div class="score-bar-item">
+        <div class="score-bar-label"><span>The ${archNames[k]}</span><span>${pct}%</span></div>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:0%" data-target="${pct}"></div></div>
+      </div>`;
+  });
+
+  setTimeout(() => {
+    document.querySelectorAll('.score-bar-fill').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  }, 300);
+}
+
+function restartQuiz() {
+  document.getElementById('result').classList.remove('active');
+  current = 0;
+  answers = [];
+  tempOthers = null;
+  tempSelf = null;
+  document.getElementById('progressBar').style.width = '0%';
+  startQuiz();
+}
+</script>
+</body>
+</html>
